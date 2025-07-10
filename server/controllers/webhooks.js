@@ -5,15 +5,16 @@ export const clerkWebhook = async (req, res) => {
     try {
         const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
 
-        const payload = req.body; // Assuming raw buffer, see note above
-        const headers = {
+        // Assuming raw buffer, see note above
+        await whook.verify(JSON.stringify(req.body), {
             "svix-id": req.headers["svix-id"],
             "svix-timestamp": req.headers["svix-timestamp"],
             "svix-signature": req.headers["svix-signature"]
-        };
 
-        const evt = whook.verify(payload, headers);
-        const { data, type } = evt;
+        })
+
+
+        const { data, type } = req.body;
 
         switch (type) {
             case 'user.created': {
@@ -25,7 +26,7 @@ export const clerkWebhook = async (req, res) => {
                 };
                 await User.create(userData);
                 res.json({});
-                return;
+                break;
             }
 
             case "user.updated": {
@@ -36,18 +37,18 @@ export const clerkWebhook = async (req, res) => {
                 };
                 await User.findByIdAndUpdate(data.id, userData);
                 res.json({});
-                return;
+                break;
             }
 
             case "user.deleted": {
                 await User.findByIdAndDelete(data.id);
                 res.json({});
-                return;
+                break;
             }
 
             default:
                 res.status(400).json({ success: false, message: "Unhandled event type" });
-                return;
+                break;
         }
 
     } catch (error) {

@@ -13,10 +13,7 @@ await connectDB();
 app.use(cors());
 
 // ✅ Important: register raw body parser ONLY for webhook
-app.post('/clerk', express.raw({ type: 'application/json' }), clerkWebhook);
-
-// JSON parser for all other routes (after webhook)
-app.use(express.json());
+app.post('/clerk', express.json(), clerkWebhook);
 
 app.get('/', (req, res) => {
     res.send("WELCOME TO LMS BACKEND");
