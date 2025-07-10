@@ -3,16 +3,26 @@ import cors from 'cors';
 import 'dotenv/config'
 import connectDB from './configs/mongodb.js'
 import { clerkWebhook } from './controllers/webhooks.js';
+
 const app = express();
-//Middlewares
-app.use(cors())
-app.use(express.json())
+
+// Connect DB
 await connectDB();
-app.get('/',(req,res)=>{
-    res.send("WELCOME TO LMS BACKENED")
-})
-app.post('/clerk',express.json(),clerkWebhook)
+
+// Middlewares
+app.use(cors());
+
+// ✅ Important: register raw body parser ONLY for webhook
+app.post('/clerk', express.raw({ type: 'application/json' }), clerkWebhook);
+
+// JSON parser for all other routes (after webhook)
+app.use(express.json());
+
+app.get('/', (req, res) => {
+    res.send("WELCOME TO LMS BACKEND");
+});
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT,()=>{
-    console.log(`Server is running on port ${PORT}`)
-})
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
