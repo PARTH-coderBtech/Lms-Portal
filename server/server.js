@@ -19,7 +19,17 @@ await connectDB();
 await connectCloudinary();
 
 // Middlewares
-app.use(cors());
+const allowedOrigins = ['https://lms-portal-frontend-ten.vercel.app'];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (like Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('CORS not allowed from this origin: ' + origin), false);
+  },
+  credentials: true,
+}));
 app.use(clerkMiddleware())
 app.use(bodyParser.json());
 app.use('/certificates', express.static(path.join('./certificates')));
