@@ -1,17 +1,10 @@
-// server/controllers/certificateController.js
+
+import PDFDocument from 'pdfkit';
+import fontkit from 'fontkit';
 import uniqid from 'uniqid';
 import User from '../models/user.js';
 import Course from '../models/course.js';
-import puppeteer from 'puppeteer'; // ✅ NOT puppeteer-core
-const browser = await puppeteer.launch({
-  headless: true,
-  args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  executablePath: puppeteer.executablePath(), // ✅ this ensures correct Chromium path
-});
-
-
-
-
+import https from 'https';
 
 export const generateCertificate = async (req, res) => {
   try {
@@ -29,144 +22,103 @@ export const generateCertificate = async (req, res) => {
     }
 
     const userName = user.fullName || user.name || 'User';
-    const courseName = course.courseTitle;
-    const instructorName = 'Parth Agrawal';
-    const completionDate = new Date().toLocaleDateString();
+    const courseTitle = course.courseTitle;
     const certId = uniqid();
+    const issueDate = new Date().toLocaleDateString();
 
-    // Host your signature image publicly or use a reliable CDN
-    const signatureUrl = 'https://i.ibb.co/Lhdytp89/Signature.png'; // <- replace this with your real URL
-    
-    const htmlContent = `
-      <html>
-        <head>
-          <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
-          <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
-          <style>
-            body {
-              margin: 0;
-              padding: 0;
-              font-family: 'Merriweather', serif;
-              background-color: #0f172a;
-              color:#FFD700;
-              padding: 60px 40px;
-              text-align: center;
-              box-sizing: border-box;
-            }
-            .container {
-              max-width: 900px;
-              margin: auto;
-              padding: 60px 40px;
-              border: 12px solid #0f172a;
-              background-color: #0f172a;
-              box-shadow: 0 0 40px rgba(0, 0, 0, 0.08);
-              border-radius: 8px;
-            }
-            h1 {
-              font-size: 40px;
-              font-weight: 700;
-              text-transform: uppercase;
-              margin-bottom: 12px;
-            }
-            .subtitle {
-              font-size: 16px;
-              color: #FFD700;
-              margin-bottom: 25px;
-            }
-            .name {
-              font-size: 32px;
-              font-weight: 700;
-              color: #FFD700;
-              margin-bottom: 10px;
-            }
-            .course {
-              font-size: 24px;
-              font-weight: 700;
-              margin: 10px 0 25px;
-              color: #FFD700;
-            }
-            .date {
-              font-size: 16px;
-              margin-bottom: 10px;
-            }
-            .cert-id {
-              font-size: 14px;
-              color: #FFD700;
-            }
-            .signature {
-      font-family: 'Great Vibes', cursive;
-      font-size: 36px;
-      color: #FFD700;
-    }
+    const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 50 });
+    doc.registerFont('Heading', 'fonts/Merriweather-Bold.ttf'); // Add .ttf file locally
+    doc.registerFont('Signature', 'fonts/GreatVibes-Regular.ttf'); // Add .ttf file locally
+    doc.registerFont('Body', 'fonts/Merriweather-Regular.ttf');
 
-    .sparkling-gold {
-      background: linear-gradient(90deg, #FFD700, #fff8dc, #FFD700);
-      background-size: 200% auto;
-      background-clip: text;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: shine 2s linear infinite;
-    }
-
-    @keyframes shine {
-      to {
-        background-position: -200% center;
-      }
-    }
-
-    .logo {
-    color:white;
-  position: absolute;
-  top: 30px;        /* distance from top edge */
-  right: 30px;      /* distance from right edge */
-  width: 100px;     /* adjust as needed */
-  height: auto;
-}
-
-            .footer {
-              margin-top: 50px;
-              font-size: 12px;
-              color: #FFD700;
-            }
-          </style>
-        </head>
-        <body>
-        <div style="position: relative; width: 100%; height: 100%;">
-    <img src="https://lms-portal-frontend-ten.vercel.app/assets/logo-eRVar-dC.svg" class="logo" alt="Logo" />
-          <div class="container">
-            <h1>Certificate of Completion</h1>
-            <div class="subtitle">This is to certify that</div>
-            <div class="name">${userName}</div>
-            <div class="subtitle">has successfully completed the course</div>
-            <div class="course">${courseName}</div>
-            <div class="date">Date: ${completionDate}</div>
-            <div class="cert-id">Certificate ID: ${certId}</div>
-            <div class="signature">
-                <div class="signature sparkling-gold">Parth Agrawal</div>
-            </div>
-            <div class="footer">Issued by Edemy LMS Platform | Edemy.com</div>
-          </div>
-        </body>
-      </html>
-    `;
-
-    const browser = await puppeteer.launch({ headless: 'new' });
-    const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-
-    const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
-    await browser.close();
-
-    // 📥 Force download in browser
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="${userName.replace(/\s+/g, '_')}_Certificate.pdf"`,
-      'Content-Length': pdfBuffer.length,
+    let buffers = [];
+    doc.on('data', buffers.push.bind(buffers));
+    doc.on('end', () => {
+      const pdfData = Buffer.concat(buffers);
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${userName}_Certificate.pdf"`,
+        'Content-Length': pdfData.length,
+      });
+      res.send(pdfData);
     });
 
-    return res.send(pdfBuffer);
-  } catch (err) {
-    console.error('❌ Certificate generation error:', err);
-    return res.status(500).json({ success: false, message: err.message });
+    // 🎨 Background
+    doc.rect(0, 0, doc.page.width, doc.page.height).fill('#0f172a');
+
+    // 🖼️ Logo
+    const logoUrl = 'https://lms-portal-frontend-ten.vercel.app/assets/logo-eRVar-dC.svg';
+    const loadImage = (url) =>
+      new Promise((resolve, reject) => {
+        https.get(url, (res) => {
+          const data = [];
+          res.on('data', (chunk) => data.push(chunk));
+          res.on('end', () => resolve(Buffer.concat(data)));
+        }).on('error', reject);
+      });
+
+    const logoBuffer = await loadImage(logoUrl);
+    doc.image(logoBuffer, doc.page.width - 140, 40, { width: 100 });
+
+    // 📝 Certificate Content
+    doc
+      .font('Heading')
+      .fillColor('#FFD700')
+      .fontSize(36)
+      .text('Certificate of Completion', { align: 'center' });
+
+    doc.moveDown();
+    doc
+      .font('Body')
+      .fontSize(18)
+      .fillColor('#FFD700')
+      .text('This is to certify that', { align: 'center' });
+
+    doc.moveDown(0.5);
+    doc
+      .font('Heading')
+      .fontSize(28)
+      .fillColor('white')
+      .text(userName, { align: 'center' });
+
+    doc.moveDown(0.5);
+    doc
+      .font('Body')
+      .fontSize(18)
+      .fillColor('#FFD700')
+      .text('has successfully completed the course', { align: 'center' });
+
+    doc.moveDown(0.2);
+    doc
+      .font('Heading')
+      .fontSize(24)
+      .fillColor('white')
+      .text(courseTitle, { align: 'center' });
+
+    doc.moveDown(1);
+    doc
+      .font('Body')
+      .fontSize(16)
+      .fillColor('#FFD700')
+      .text(`Date: ${issueDate}    |    Certificate ID: ${certId}`, { align: 'center' });
+
+    // ✍️ Signature
+    doc.moveDown(3);
+    doc
+      .font('Signature')
+      .fontSize(36)
+      .fillColor('#FFD700')
+      .text('Parth Agrawal', { align: 'right' });
+
+    doc
+      .font('Body')
+      .fontSize(14)
+      .fillColor('#FFD700')
+      .text('Instructor - Edemy LMS', { align: 'right' });
+
+    doc.end();
+  } catch (error) {
+    console.error('❌ Certificate generation error:', error);
+    return res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 };
