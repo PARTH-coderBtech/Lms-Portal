@@ -1,12 +1,16 @@
 // server/controllers/certificateController.js
-import puppeteer from 'puppeteer';
 import uniqid from 'uniqid';
 import User from '../models/user.js';
 import Course from '../models/course.js';
+import puppeteer from 'puppeteer'; // ✅ NOT puppeteer-core
 const browser = await puppeteer.launch({
   headless: true,
   args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  executablePath: puppeteer.executablePath(), // ✅ this ensures correct Chromium path
 });
+
+
+
 
 
 export const generateCertificate = async (req, res) => {
