@@ -46,7 +46,7 @@ export const generateCertificate = async (req, res) => {
     doc.rect(0, 0, doc.page.width, doc.page.height).fill('#0f172a');
 
     // 🖼️ Logo
-    const logoUrl = 'https://lms-portal-frontend-ten.vercel.app/assets/logo-eRVar-dC.svg';
+    const logoUrl = 'https://i.ibb.co/qY4ynJsF/20250712-1016-Edemy-Logo-Design-simple-compose-01jzyf83qve30vx56cbbg3c62b.png';
     const loadImage = (url) =>
       new Promise((resolve, reject) => {
         https.get(url, (res) => {
