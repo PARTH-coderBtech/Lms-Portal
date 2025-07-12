@@ -3,6 +3,11 @@ import puppeteer from 'puppeteer';
 import uniqid from 'uniqid';
 import User from '../models/user.js';
 import Course from '../models/course.js';
+const browser = await puppeteer.launch({
+  headless: true,
+  args: ['--no-sandbox', '--disable-setuid-sandbox'],
+});
+
 
 export const generateCertificate = async (req, res) => {
   try {
@@ -27,7 +32,7 @@ export const generateCertificate = async (req, res) => {
 
     // Host your signature image publicly or use a reliable CDN
     const signatureUrl = 'https://i.ibb.co/Lhdytp89/Signature.png'; // <- replace this with your real URL
-
+    
     const htmlContent = `
       <html>
         <head>
