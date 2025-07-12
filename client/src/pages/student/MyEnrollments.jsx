@@ -1,6 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { AppContext } from '../../context/AppContext'
-import { assets } from '../../assets/assets'
 import {Line} from 'rc-progress'
 import Footer from '../../components/student/Footer'
 import axios from 'axios'
