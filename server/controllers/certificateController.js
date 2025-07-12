@@ -1,6 +1,5 @@
 
 import PDFDocument from 'pdfkit';
-import fontkit from 'fontkit';
 import uniqid from 'uniqid';
 import User from '../models/user.js';
 import Course from '../models/course.js';
